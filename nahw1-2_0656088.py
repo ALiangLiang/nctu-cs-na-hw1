@@ -1,8 +1,7 @@
 import sys
 import re
-import getopt
+import argparse
 import texttable as tt
-import math
 from datetime import datetime
 
 class Log():
@@ -39,60 +38,36 @@ def draw_summary(sum):
     # print out table
     print(tab.draw())
 
-def main(
-    sort_by_user = False,
-    before = datetime(3000, 1, 1),
-    after = datetime(1900, 1, 1),
-    max = math.inf,
-    min = 0,
-    reverse = False):
+def main():
 
     # parse arguments
-    opts, args = getopt.getopt(sys.argv[1:], "hrut:n:", ["help", "before=", "after="])
-    # print(opts, args)
-    for o, a in opts:
-        if o in ("-h", "--help"):
-            print("usage: nahw1-2_0656088.py [-h] [-u] [--after AFTER] [--before BEFORE] [-n N]")
-            print("                          [-t T] [-r]")
-            print("                          filename")
-            print("")
-            print("Auth log parser.")
-            print("")
-            print("positional arguments:")
-            print("  filename    Log file path.")
-            print("")
-            print("optional arguments:")
-            print("  -h, --help       show this help message and exit")
-            print("  -u               Show failed login log and sort log by user .")
-            print("  --after AFTER    Filter log after data. format YYYY-MM-DD-HH:MM:SS")
-            print("  --before BEFORE  Filter log before data. format YYYY-MM-DD-HH:MM:SS")
-            print("  -n N             Show only the user of most N-th times")
-            print("  -t T             Show only the user of attacking equal or more than T times")
-            print("  -r               Sort in reverse order")
-            sys.exit()
-        elif o == '-u':
-            sort_by_user = True
-        elif o == '--after':
-            after = datetime.strptime(a, '%Y-%m-%d-%H:%M:%S')
-        elif o == '--before':
-            before = datetime.strptime(a, '%Y-%m-%d-%H:%M:%S')
-        elif o == '-n':
-            max = int(a)
-        elif o == '-t':
-            min = int(a)
-        elif o == '-r':
-            reverse = True
-    filepath = args[-1]
-    # print("filepath: ", filepath)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filename', type=str, help="Log file path")
+    parser.add_argument('-u', help="Summary failed login log sort log by user .", action="store_true")
+    parser.add_argument("-after", type=lambda d: datetime.strptime(d, '%Y-%m-%d-%H:%M:%S'), help="Filter log after date. format YYYY-MM-DD-HH:MM:SS")
+    parser.add_argument("-before", type=lambda d: datetime.strptime(d, '%Y-%m-%d-%H:%M:%S'), help="Filter log before date. format YYYY-MM-DD-HH:MM:SS")
+    parser.add_argument("-n", type=int, help="Show only the user of most N-th times")
+    parser.add_argument("-t", type=int, help="Show only the user of attacking equal or more than T times")
+    parser.add_argument("-r", help="Sort in reverse order", action="store_true")
+    args = parser.parse_args()
+
+    sort_by_user = args.u or False
+    after = args.after or datetime(1900, 1, 1)
+    before = args.before or datetime(3000, 1, 1)
+    max_number = args.n or None
+    min = args.t or 0
+    reverse = args.r or False
+    file_path = args.filename
+    # print("file_path: ", file_path)
     # print("sort_by_user: ", sort_by_user)
     # print("after: ", after)
     # print("before: ", before)
-    # print("max: ", max)
+    # print("max_number: ", max_number)
     # print("min: ", min)
     # print("reverse: ", reverse)
 
     # open file
-    file = open(filepath, "r")
+    file = open(file_path, "r")
 
     # read and store sshd log
     logs = []
@@ -117,13 +92,16 @@ def main(
     for user in sum_dic:
         sum_list.append([user, sum_dic[user]])
 
-    filtered_sum_list = filter(lambda l: l[1] >= min and l[1] <= max, sum_list)
+    filtered_sum_list = filter(lambda l: l[1] >= min, sum_list)
 
     # determine sort method (is reverse or sort by user name)
     if sort_by_user:
         table_data = sorted(filtered_sum_list, key=lambda user: user[0], reverse=reverse)
     else:
         table_data = sorted(filtered_sum_list, key=lambda user: user[1], reverse=not reverse)
+
+    if max_number:
+        table_data = table_data[:max_number]
 
     # draw list as table on console
     draw_summary(table_data)

@@ -6,7 +6,7 @@
 
 - sys
 - requests
-- cv2
+- opencv-python
 - pytesseract
 - shutil
 - numpy
@@ -32,9 +32,8 @@ Log in portal and redirect to course selection system.
 
 - sys
 - re
-- getopt
+- argparse
 - texttable
 - cjkwrap
-- math
 - datetime
   - datetime
